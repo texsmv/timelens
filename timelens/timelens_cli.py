@@ -1,6 +1,6 @@
 # timelens_cli.py
 import argparse
-from mts_vis.server import initServer
+from timelens.server import initServer
 import os
 
 def main():

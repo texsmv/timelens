@@ -45,10 +45,10 @@ class MultivariateTimeSeries:
 
         self.name = name
         self.mts = mts
-        self.dimensions = dimensions if dimensions is not None else []
-        self.coords = coords if coords is not None else {}
-        self.labels = labels if labels is not None else {}
-        self.label_names = label_names if label_names is not None else {}
+        self.dimensions = dimensions if dimensions is not None else None
+        self.coords = coords if coords is not None else None
+        self.labels = labels if labels is not None else None
+        self.label_names = label_names if label_names is not None else None
 
 
 class MTSStorage:
@@ -150,7 +150,7 @@ if __name__ == '__main__':
         dimensions=dimensions_1,
         coords=coords_1,
         labels=labels_1,
-        label_names=label_names_1
+        # label_names=label_names_1
     )
 
     storage.add_mts(
@@ -176,5 +176,5 @@ if __name__ == '__main__':
     if loaded_mts_1.labels:
         print(f"Loaded label keys: {loaded_mts_1.labels.keys()}")
 
-    storage_loaded.delete()
-    print("Storage file deleted.")
+    # storage_loaded.delete()
+    # print("Storage file deleted.")

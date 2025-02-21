@@ -6,7 +6,7 @@ setup(
     packages=find_packages(), # Automatically find your packages
     entry_points={
         'console_scripts': [
-            'timelens=timelens_cli:main', # This line is the important part
+            'timelens=timelens.timelens_cli:main', # This line is the important part
         ],
     },
     install_requires=[ # List your dependencies here

@@ -2,7 +2,7 @@
 import re
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from mts_vis.storage import MTSStorage  # Import MTSStorage from within the package
+from timelens.storage import MTSStorage  # Import MTSStorage from within the package
 import numpy as np
 from flask import jsonify
 
@@ -18,12 +18,12 @@ CORS(app)
 
 @app.route("/loadFile", methods=['POST'])
 def reloadFile():
-    filePath = request.get_json()["path"]
-    global storage
-    storage = MTSStorage(filePath)
-    storage.load()
-    global objects
-    objects = storage.objects
+    # filePath = request.get_json()["path"]
+    # global storage
+    # storage = MTSStorage(filePath)
+    # storage.load()
+    # global objects
+    # objects = storage.objects
     return jsonify({'status': 'Done'})
 
 @app.route("/objectsInfo", methods=['POST'])
@@ -47,27 +47,32 @@ def object():
         resp_map['data'] = mts_object.mts.flatten().tolist()
         resp_map['shape'] = mts_object.mts.shape
 
-        if 'coords' in mts_object.coords: # Access coords from mts_object
+        print(mts_object.coords)
+        if mts_object.coords is not None: 
             resp_map['coords'] = {}
             for k, v in mts_object.coords.items():
+                print(k)
                 resp_map['coords'][k] = v.flatten().tolist()
-        if 'labels' in mts_object.labels: # Access labels from mts_object
+
+        if mts_object.labels is not None : # Access labels from mts_object
             resp_map['labels'] = {}
             for k, v in mts_object.labels.items():
                 resp_map['labels'][k] = v.flatten().tolist()
 
-        if 'label_names' in mts_object.label_names: # Access label_names from mts_object
+        if mts_object.label_names is not None: # Access label_names from mts_object
             resp_map['labelsNames'] = mts_object.label_names
-        elif 'labels' in mts_object.labels: # Fallback to create label names from unique values if not provided
+        
+        elif mts_object.labels is not None: # Fallback to create label names from unique values if not provided
             resp_map['labelsNames'] = {}
             for k, v in mts_object.labels.items():
                 labls = np.unique(v.flatten())
                 resp_map['labelsNames'][k] = { str(int(l)):int(l) for l in labls } # Ensure keys are strings
+
         else:
             resp_map['labelsNames'] = {} # Ensure labelsNames is always in response, even if empty
 
 
-        if 'dimensions' in mts_object.__dict__ and mts_object.dimensions: # Check if dimensions exist and is not empty
+        if mts_object.dimensions is not None: # Check if dimensions exist and is not empty
             resp_map['dimensions'] = mts_object.dimensions
         else:
             resp_map['dimensions'] = [f"dimension_{i}" for i in range(D)] # Default dimension names
@@ -95,31 +100,3 @@ if __name__ == "__main__":
     # but normally you would use timelens_cli.py
     example_storage_path = 'mts_datasets/example_storage' # Example path, adjust as needed
     initServer(example_storage_path, host="127.0.0.1", port=5000)
-content_copy
-download
-Use code with caution.
-Python
-# timelens_cli.py
-import argparse
-from mts_vis.server import initServer
-import os
-
-def main():
-    parser = argparse.ArgumentParser(description="Timelens: Visualize Time Series Data")
-    parser.add_argument("storage_path", help="Path to the MTSStorage file (.npy)")
-    parser.add_argument("--host", default="127.0.0.1", help="Host address for the server (default: 127.0.0.1)")
-    parser.add_argument("--port", type=int, default=5000, help="Port number for the server (default: 5000)")
-
-    args = parser.parse_args()
-
-    if not os.path.exists(args.storage_path + '.npy'): # Check if .npy exists
-        print(f"Error: Storage file not found at {args.storage_path + '.npy'}")
-        return
-
-    print(f"Starting Timelens server with storage: {args.storage_path}")
-    print(f"Host: {args.host}, Port: {args.port}")
-
-    initServer(args.storage_path, host=args.host, port=args.port)
-
-if __name__ == "__main__":
-    main()

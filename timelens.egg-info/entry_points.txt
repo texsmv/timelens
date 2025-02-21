@@ -1,0 +1,2 @@
+[console_scripts]
+timelens = timelens.timelens_cli:main
