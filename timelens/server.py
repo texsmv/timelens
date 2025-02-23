@@ -33,7 +33,7 @@ def object():
     if storage is None or objectName not in storage.objects:
         return jsonify({'status': 'Error', 'message': 'Object not found or storage not loaded.'}) # More informative error
     else:
-        mts_object = storage.get_mts(objectName,)
+        mts_object = storage.get_mts(objectName, None)
         N, T, D = mts_object.mts.shape
 
         if max_windows < N:
