@@ -15,17 +15,6 @@ objects = None # Remove global objects initialization
 app = Flask(__name__)
 CORS(app)
 
-
-@app.route("/loadFile", methods=['POST'])
-def reloadFile():
-    # filePath = request.get_json()["path"]
-    # global storage
-    # storage = MTSStorage(filePath)
-    # storage.load()
-    # global objects
-    # objects = storage.objects
-    return jsonify({'status': 'Done'})
-
 @app.route("/objectsInfo", methods=['POST'])
 def objectsInfo():
     global objects
@@ -37,21 +26,27 @@ def objectsInfo():
 @app.route("/object", methods=['POST'])
 def object():
     objectName = request.get_json()["name"]
+    max_windows = request.get_json()["max_windows"]
+
+
     global storage
     if storage is None or objectName not in storage.objects:
         return jsonify({'status': 'Error', 'message': 'Object not found or storage not loaded.'}) # More informative error
     else:
-        mts_object = storage.objects[objectName] # Get MultivariateTimeSeries object
+        mts_object = storage.get_mts(objectName,)
         N, T, D = mts_object.mts.shape
+
+        if max_windows < N:
+            mts_object = storage.get_mts(objectName, max_windows)
+            N, T, D = mts_object.mts.shape
+
         resp_map = {}
         resp_map['data'] = mts_object.mts.flatten().tolist()
         resp_map['shape'] = mts_object.mts.shape
 
-        print(mts_object.coords)
         if mts_object.coords is not None: 
             resp_map['coords'] = {}
             for k, v in mts_object.coords.items():
-                print(k)
                 resp_map['coords'][k] = v.flatten().tolist()
 
         if mts_object.labels is not None : # Access labels from mts_object
@@ -76,7 +71,6 @@ def object():
             resp_map['dimensions'] = mts_object.dimensions
         else:
             resp_map['dimensions'] = [f"dimension_{i}" for i in range(D)] # Default dimension names
-
 
         return jsonify(resp_map)
 

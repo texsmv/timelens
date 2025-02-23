@@ -2,6 +2,8 @@ import numpy as np
 import os
 from typing import Dict, List, Optional, Any
 
+from timelens.utils import project_mts
+
 
 class MultivariateTimeSeries:
     """
@@ -50,6 +52,21 @@ class MultivariateTimeSeries:
         self.labels = labels if labels is not None else None
         self.label_names = label_names if label_names is not None else None
 
+    def get_sampled_object(self, n: int):
+        """
+        Returns a new MultivariateTimeSeries object with only n samples from the original object.
+        """
+        # Randomly sample n indices
+        indices = np.random.choice(self.mts.shape[0], n, replace=False)
+        return MultivariateTimeSeries(
+            name=self.name,
+            mts=self.mts[indices],
+            dimensions=self.dimensions,
+            coords={k: v[indices] for k, v in self.coords.items()} if self.coords is not None else None,
+            labels={k: v[indices] for k, v in self.labels.items()} if self.labels is not None else None,
+            label_names=self.label_names
+        )
+
 
 class MTSStorage:
     """
@@ -69,6 +86,37 @@ class MTSStorage:
         self.objects: Dict[str, MultivariateTimeSeries] = {}  # Use type hint for objects
 
     def add_mts(
+            self,
+            name: str,
+            mts: np.ndarray,
+            dimensions: Optional[List[str]] = None,
+            projection: Optional[np.ndarray] = None, # Shape N x 2
+            labels: Optional[np.ndarray] = None, # Shape N
+            label_names: Optional[Dict[int, str]] = None # Dict e.g. {0: 'Group A', 1: 'Group B'}
+    ):
+        assert mts.ndim == 3, "MTS must be 3D array of shape (N, T, D)."
+        assert dimensions is None or len(dimensions) == mts.shape[2], "Number of dimensions must match MTS shape."
+        assert projection is None or projection.shape[0] == mts.shape[0], "Projection must have N rows."
+        assert labels is None or labels.shape[0] == mts.shape[0], "Labels must have N rows."
+        unique_labels = np.unique(labels) if labels is not None else None
+        assert label_names is None or len(unique_labels) == len(label_names), "Number of label names must match unique labels."
+
+
+        if projection is None:
+            projection = project_mts(mts)
+
+        mts_object = MultivariateTimeSeries(
+            name=name,
+            mts=mts,
+            dimensions=dimensions,
+            coords={'projection': projection} if projection is not None else None,
+            labels={'labels': labels} if labels is not None else None,
+            label_names={'label_names': label_names} if label_names is not None else None
+        )
+        self.objects[name] = mts_object
+
+
+    def add_mts_multi(
             self,
             name: str,
             mts: np.ndarray,
@@ -112,6 +160,23 @@ class MTSStorage:
         )
         self.objects[name] = mts_object
 
+    def get_mts(self, name: str, max_windows: None) -> Optional[MultivariateTimeSeries]:
+        """
+            Returns the MTS object with the given name, or None if not found.
+            If max_windows is provided, limits the number of windows to return in the [MultivariateTimeSeries]
+        """
+        if not name in self.objects:
+            return None
+        
+        mts = self.objects[name]
+
+        if max_windows is None:
+            return mts
+        
+        return mts.get_sampled_object(max_windows)
+        
+
+
     def save(self):
         """Saves the MTS objects to a .npy file using numpy.save."""
         objects_to_save = {name: vars(mts_obj) for name, mts_obj in self.objects.items()} # Save MTS attributes as dicts
@@ -138,13 +203,18 @@ if __name__ == '__main__':
     # Create some dummy data
     mts_data_1 = np.random.rand(10, 100, 3)  # 10 series, 100 time points, 3 dimensions
     mts_data_2 = np.random.rand(5, 150, 2)   # 5 series, 150 time points, 2 dimensions
+    mts_data_3 = np.random.rand(1000, 200, 4)   # 8 series, 200 time points, 4 dimensions
+
 
     coords_1 = {'pca': np.random.rand(10, 2), 'tsne': np.random.rand(10, 2)}
     labels_1 = {'cluster_ids': np.random.randint(0, 3, 10)}
     label_names_1 = {'cluster_ids': {0: 'Group A', 1: 'Group B', 2: 'Group C'}}
     dimensions_1 = ['sensor_x', 'sensor_y', 'sensor_z']
 
-    storage.add_mts(
+
+    coords_3 = np.random.rand(1000, 2)
+
+    storage.add_mts_multi(
         name="mts_1",
         mts=mts_data_1,
         dimensions=dimensions_1,
@@ -153,11 +223,17 @@ if __name__ == '__main__':
         # label_names=label_names_1
     )
 
-    storage.add_mts(
+    storage.add_mts_multi(
         name="mts_2",
         mts=mts_data_2,
         coords={'umap': np.random.rand(5, 2)},
         labels={'category': np.random.randint(0, 2, 5)}
+    )
+
+    storage.add_mts(
+        name="mts_3",
+        mts=mts_data_3,
+        projection=coords_3
     )
 
     storage.save()
