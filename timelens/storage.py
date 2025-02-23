@@ -92,7 +92,8 @@ class MTSStorage:
             dimensions: Optional[List[str]] = None,
             projection: Optional[np.ndarray] = None, # Shape N x 2
             labels: Optional[np.ndarray] = None, # Shape N
-            label_names: Optional[Dict[int, str]] = None # Dict e.g. {0: 'Group A', 1: 'Group B'}
+            label_names: Optional[Dict[int, str]] = None, # Dict e.g. {0: 'Group A', 1: 'Group B'}
+            reducer = None,
     ):
         assert mts.ndim == 3, "MTS must be 3D array of shape (N, T, D)."
         assert dimensions is None or len(dimensions) == mts.shape[2], "Number of dimensions must match MTS shape."
@@ -103,7 +104,7 @@ class MTSStorage:
 
 
         if projection is None:
-            projection = project_mts(mts)
+            projection = project_mts(mts, reducer=reducer)
 
         mts_object = MultivariateTimeSeries(
             name=name,
