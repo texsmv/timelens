@@ -13,6 +13,7 @@ setup(
         'flask',
         'flask-cors',
         'numpy',
+        'scikit-learn',
         'argparse' # Make sure argparse is included if you are using it in timelens_cli.py
     ],
 )
